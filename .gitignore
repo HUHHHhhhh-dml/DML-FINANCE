@@ -1,0 +1,19 @@
+# DML-FINANCE
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec
+.tmp/
+.tmp_pytest/
+.pytest_cache/
+.dml_cache/
+.env
+*.xlsx
+~$*.xlsx
+pytest-of-*/
+matplotlib-*/
+dml-matplotlib-cache/
+autotest.txt

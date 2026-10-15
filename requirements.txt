@@ -1,0 +1,47 @@
+# =============================================================================
+# DML-FINANCE - dependencias (Python 3.10 o superior)
+#
+# Instalacion recomendada en un entorno virtual:
+#     python -m venv .venv
+#     .venv\Scripts\activate          (Windows)
+#     source .venv/bin/activate       (Linux/macOS)
+#     pip install -r requirements.txt
+# =============================================================================
+
+# --- Datos de mercado -------------------------------------------------------
+yfinance>=0.2.40          # precios, fundamentales y Beta publicada
+pandas>=2.0               # series temporales y tablas
+numpy>=1.26               # calculo numerico
+requests>=2.31            # peticiones HTTP a Investing.com
+cloudscraper>=1.2.71      # scraping de Investing.com (Cloudflare)
+python-dotenv>=1.0        # claves de API en un archivo .env (nunca en el codigo)
+
+# --- Modelos y estadistica --------------------------------------------------
+statsmodels>=0.14.0       # MCO, Durbin-Watson, Jarque-Bera, Breusch-Pagan
+scipy>=1.11               # contrastes, cuantiles y distribuciones
+
+# --- Interfaz de escritorio -------------------------------------------------
+PySide6>=6.6              # Qt 6: ventana, pestanas, tablas, hilos
+matplotlib>=3.8           # graficos embebidos en la interfaz (FigureCanvas)
+
+# --- Exportacion opcional a Excel (solo al pulsar el boton) -----------------
+openpyxl>=3.1             # .xlsx con formulas reales auditables
+
+# --- Configuracion y pruebas ------------------------------------------------
+PyYAML>=6.0               # config.yaml
+pytest>=8.0               # pruebas unitarias
+pytest-qt>=4.4            # pruebas de interfaz (opcional, facilitan el smoke test)
+
+# -----------------------------------------------------------------------------
+# OPCIONAL 1 - Respaldo de Investing.com con navegador headless (paso 2 del
+# pliego). Si no se instala, la aplicacion usa directamente FRED / Yahoo / manual:
+#     pip install playwright>=1.44
+#     playwright install chromium
+#
+# OPCIONAL 2 - Claves de API para fundamentales alternativos. Se definen como
+# variables de entorno (o en un .env que NO se versiona):
+#     FRED_API_KEY      -> serie de tasas por la API oficial de FRED
+#     FMP_API_KEY       -> multiplos desde Financial Modeling Prep
+#     FINNHUB_API_KEY   -> PER desde Finnhub
+# -----------------------------------------------------------------------------
+# playwright>=1.44

@@ -1,0 +1,134 @@
+# =============================================================================
+# DML-FINANCE - configuracion de la aplicacion
+#
+# Este archivo se fusiona sobre los valores por defecto de dml/core/config.py.
+# Todos los umbrales son editables tambien en vivo desde el panel "Parametros".
+# Las CLAVES DE API NUNCA se escriben aqui: se leen de las variables de entorno
+# FRED_API_KEY, FMP_API_KEY y FINNHUB_API_KEY (o de un archivo .env).
+#
+# Nota: el cambio de tema de la interfaz guarda este archivo conservando los
+# comentarios.
+# =============================================================================
+
+general:
+  meses: 60                  # meses de historico mensual (pliego: 60)
+  indice: "^GSPC"            # ^GSPC (S&P 500) | ^IXIC (Nasdaq) | ^DJI (Dow Jones)
+  modo: "estandar"           # estandar (formulas corregidas) | excel (replica el libro de referencia)
+  periodo_historico: "10y"   # periodo solicitado a Yahoo Finance para la serie mensual
+  tolerancia_spot_pct: 0.05  # aviso si el ultimo cierre mensual difiere del spot mas de este %
+  meses_pronostico: 12       # horizonte del pronostico econometrico (T meses)
+
+# Umbrales de la parrilla de decision (editables en pantalla)
+umbrales:
+  beta_max: 1.10             # criterio 6: Beta < 1.10
+  r2_min: 0.70               # criterio 9: R2 > 0.70
+  trg_extra_tlr: 0.01        # criterio 10: margen de seguridad = TLR + 1%
+  delta_call_min: 0.50       # criterio 12: Delta Call > 0.50
+  var_confianza: [0.95, 0.99]
+
+# Reglas de decision sobre la calificacion promedio (0 a 1)
+decision:
+  comprar_min: 0.70          # > 0.70           -> COMPRAR
+  mantener_min: 0.40         # 0.40 a 0.70      -> MANTENER ; < 0.40 -> NO INVERTIR
+
+# Black-Scholes-Merton generalizado (costo de mantener b = r - q)
+black_scholes:
+  strike_modo: "forward"     # forward (K = S x e^(bT)) | manual
+  strike_manual: null        # se usa si strike_modo = manual
+  vencimiento_dias: 365      # dias hasta el vencimiento (1 anio desde hoy)
+  dias_por_anio: 365         # T = (vencimiento - hoy) / 365, con fechas reales
+  tolerancia_griegas: 0.001  # tolerancia relativa en la prueba de diferencias finitas
+
+datos:
+  cache: true                # cache local por dia
+  cache_dir: ".dml_cache"    # carpeta oculta (unica escritura automatica)
+  cache_ttl_horas: 24
+  pausa_peticiones_seg: 1.5  # pausa entre peticiones (respeto a los terminos de uso)
+  reintentos: 3
+  timeout_seg: 25
+  intentar_investing: true   # pasos 1 y 2: cloudscraper/requests y Playwright
+  usar_playwright: true      # paso 2: navegador headless (requiere playwright instalado)
+  usar_fred: true            # paso 3: respaldo FRED (API key o fredgraph.csv publico)
+  usar_yfinance_tasas: true  # paso 4: respaldo Yahoo (10 y 30 anios, y proxy de la TLR)
+  usar_manual: true          # paso 5: ultimo recurso, cuadro de dialogo manual
+  agregacion_fred: "last"    # last | mean  (agregacion diaria -> mensual)
+  investing_urls:
+    # Investing.com retiro la pagina "u.s.-4-week-bond-yield" (hoy devuelve 404);
+    # el T-Bill a 4 semanas se publica como "1 month" y devuelve el mismo dato.
+    tbill_4w: "https://www.investing.com/rates-bonds/u.s.-1-month-bond-yield"
+    ust_10y: "https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield"
+    ust_30y: "https://www.investing.com/rates-bonds/u.s.-30-year-bond-yield"
+  fred_series:
+    tbill_4w: "DGS1MO"           # rendimiento constante de inversion (base correcta)
+    tbill_4w_descuento: "DTB4WK" # base a descuento: se CONVIERTE antes de usarla
+    ust_10y: "DGS10"
+    ust_30y: "DGS30"
+  yf_series:
+    # ^TNX y ^TYX: bono a 10 y 30 anios (coinciden con los plazos pedidos).
+    ust_10y: "^TNX"
+    ust_30y: "^TYX"
+    # ^IRX es el T-Bill a 13 SEMANAS: se usa SOLO como proxy ETIQUETADO de la
+    # TLR, nunca presentado como si fuera el T-Bill a 4 semanas.
+    tbill_4w_proxy: "^IRX"
+  dias_tbill_descuento: 28   # plazo en dias para y = 365*d / (360 - d*t)
+
+fundamentales:
+  fmp_api_key_env: "FMP_API_KEY"
+  finnhub_api_key_env: "FINNHUB_API_KEY"
+  usar_mediana_pares: false  # true = PER y P/FCF del sector como mediana de los pares (mas lento)
+  macd:
+    rapida: 12
+    lenta: 26
+    senal: 9
+    dias_analisis: 30        # "MACD de 1 mes": ultimos 30 dias de cotizacion
+
+# Multiplos de referencia por sector (se usan si usar_mediana_pares = false)
+sectores:
+  per_default:
+    Technology: 32.0
+    Communication Services: 22.0
+    Consumer Cyclical: 24.0
+    Consumer Defensive: 21.0
+    Healthcare: 22.0
+    Financial Services: 14.5
+    Industrials: 20.0
+    Energy: 13.0
+    Basic Materials: 16.0
+    Utilities: 17.5
+    Real Estate: 30.0
+    DESCONOCIDO: 20.0
+  p_fcf_default:
+    Technology: 30.0
+    Communication Services: 20.0
+    Consumer Cyclical: 22.0
+    Consumer Defensive: 20.0
+    Healthcare: 21.0
+    Financial Services: 12.0
+    Industrials: 18.0
+    Energy: 10.0
+    Basic Materials: 13.0
+    Utilities: 16.0
+    Real Estate: 24.0
+    DESCONOCIDO: 18.0
+  pares:
+    Technology: ["AAPL", "MSFT", "AVGO", "AMD", "INTC", "QCOM", "TXN", "MU"]
+    Communication Services: ["GOOGL", "META", "NFLX", "DIS", "TMUS", "VZ"]
+    Consumer Cyclical: ["AMZN", "TSLA", "HD", "MCD", "NKE", "SBUX"]
+    Consumer Defensive: ["PG", "KO", "PEP", "COST", "WMT", "PM"]
+    Healthcare: ["LLY", "UNH", "JNJ", "MRK", "ABBV", "PFE"]
+    Financial Services: ["JPM", "BAC", "WFC", "GS", "MS", "C"]
+    Industrials: ["CAT", "GE", "HON", "UPS", "BA", "RTX"]
+    Energy: ["XOM", "CVX", "COP", "SLB", "EOG", "PSX"]
+    Basic Materials: ["LIN", "SHW", "FCX", "NEM", "DOW"]
+    Utilities: ["NEE", "DUK", "SO", "D", "AEP"]
+    Real Estate: ["PLD", "AMT", "EQIX", "SPG", "O"]
+
+ui:
+  tema: "oscuro"
+  tickers_historial: 12
+  guardar_geometria: true    # guarda el tema elegido en este archivo
+
+demo:
+  ticker: "DEMO"
+  spot: 100.0
+  meses: 60
