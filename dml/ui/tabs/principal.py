@@ -95,9 +95,41 @@ def _color_cumple(valor: Any) -> Optional[str]:
     return AMBAR
 
 
-def _celda(texto: str, dato: Any = None, color: Optional[str] = None, tooltip: str = "", alineacion: Any = None) -> QTableWidgetItem:
-    """Crea una celda con color, tooltip y valor de ordenacion explicito."""
-    item = QTableWidgetItem(str(texto))
+class _CeldaOrdenable(QTableWidgetItem):
+    """Celda de la parrilla que **ordena por el valor real**, no por el texto.
+
+    ``sortItems`` compara el ``DisplayRole``, que es el texto que se ve. Por eso la
+    columna "#" ordenaba "1, 10, 11, 12, 2, 3..." en vez de "1, 2, ..., 12": para
+    Qt, "10" va antes que "2".
+
+    Aqui se compara el ``UserRole``, donde ``_celda`` guarda el dato de verdad. Si
+    los dos valores son numeros se comparan como numeros, y si no, como texto. El
+    texto mostrado no cambia.
+    """
+
+    def __lt__(self, otro: "QTableWidgetItem") -> bool:  # noqa: D105 - operador
+        mio = self.data(Qt.UserRole)
+        suyo = otro.data(Qt.UserRole) if otro is not None else None
+        try:
+            return float(mio) < float(suyo)
+        except (TypeError, ValueError):
+            return str(mio) < str(suyo)
+
+
+def _celda(
+    texto: str,
+    dato: Any = None,
+    color: Optional[str] = None,
+    tooltip: str = "",
+    alineacion: Any = None,
+) -> QTableWidgetItem:
+    """Crea una celda con color, tooltip y valor de ordenacion explicito.
+
+    Devuelve una :class:`_CeldaOrdenable`, de modo que las columnas numericas
+    (``#``, ``Calificacion``, ``Valor obtenido``...) ordenen como numeros y no como
+    texto. El valor que se compara es ``dato``, no el texto formateado.
+    """
+    item = _CeldaOrdenable(str(texto))
     item.setData(Qt.UserRole, dato if dato is not None else texto)
     if color:
         item.setForeground(QBrush(QColor(color)))

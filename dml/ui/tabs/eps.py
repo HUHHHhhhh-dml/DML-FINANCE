@@ -439,7 +439,9 @@ class TabEPS(TabConGrafico):
             }
         ]
         tabla = TablaDML(COLUMNAS_COMPARACION, tooltips_columnas=TOOLTIPS_COMPARACION)
-        tabla.cargar_filas(filas, COLUMNAS_COMPARACION)
+        # ordenar=False: los valores se escriben despues por indice (fila 0 =
+        # empresa), y ordenar antes de escribirlos los pondria en otra fila.
+        tabla.cargar_filas(filas, COLUMNAS_COMPARACION, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_COMPARACION.index("Empresa"),
@@ -460,6 +462,7 @@ class TabEPS(TabConGrafico):
             COLUMNAS_COMPARACION.index("Diferencia relativa"),
             [fmt_pct(relativa, 2) if relativa is not None else None],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
 
@@ -475,7 +478,7 @@ class TabEPS(TabConGrafico):
             colores_condicionales=_color_estado(COLUMNAS_CRITERIO.index("Estado")),
             tooltips_columnas=TOOLTIPS_CRITERIO,
         )
-        tabla.cargar_filas(filas, COLUMNAS_CRITERIO)
+        tabla.cargar_filas(filas, COLUMNAS_CRITERIO, ordenar=False)
         unidad = criterio.unidad if criterio is not None else "numero"
         _aplicar_formatos(
             tabla,
@@ -487,6 +490,7 @@ class TabEPS(TabConGrafico):
             COLUMNAS_CRITERIO.index("Valor de comparacion"),
             [_moneda(filas[0]["Valor de comparacion"], r.moneda, 2) if a_float(filas[0]["Valor de comparacion"]) is not None else _formato_unidad(filas[0]["Valor de comparacion"], unidad, r.moneda)],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
 
@@ -526,7 +530,7 @@ class TabEPS(TabConGrafico):
             ),
         ]
         tabla = TablaDML(COLUMNAS_ORIGEN, tooltips_columnas=TOOLTIPS_ORIGEN)
-        tabla.cargar_filas(filas, COLUMNAS_ORIGEN)
+        tabla.cargar_filas(filas, COLUMNAS_ORIGEN, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_ORIGEN.index("Valor"),
@@ -539,6 +543,7 @@ class TabEPS(TabConGrafico):
                 fmt_num(filas[5]["Valor"], 2) if a_float(filas[5]["Valor"]) is not None else None,
             ],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
         _aviso(

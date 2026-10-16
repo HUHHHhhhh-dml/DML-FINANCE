@@ -112,8 +112,28 @@ class TablaDML(QTableWidget):
         self.addAction(copiar)
 
     # ------------------------------------------------------------------ datos
-    def cargar_filas(self, filas: Sequence[Dict[str, Any]], columnas: Optional[Sequence[str]] = None) -> None:
-        """Rellena la tabla a partir de una lista de diccionarios."""
+    def cargar_filas(
+        self,
+        filas: Sequence[Dict[str, Any]],
+        columnas: Optional[Sequence[str]] = None,
+        ordenar: bool = True,
+    ) -> None:
+        """Rellena la tabla a partir de una lista de diccionarios.
+
+        Args:
+            filas: registros a mostrar (un diccionario por fila).
+            columnas: nombres y orden de las columnas.
+            ordenar: si es ``True`` (por defecto) **reactiva la ordenacion** al
+                terminar, y eso **reordena las filas** segun el indicador de
+                ordenacion vigente.
+
+                Si el llamador va a reescribir celdas despues **por indice**
+                (por ejemplo para aplicar un formato que depende de la fila),
+                tiene que pasar ``ordenar=False`` y llamar a
+                :meth:`reactivar_ordenacion` cuando acabe. Si no, cada texto
+                acabaria en la fila de otra metrica: la ordenacion mueve las
+                filas, pero una escritura por indice no la sigue.
+        """
         if columnas:
             self.setColumnCount(len(columnas))
             self.setHorizontalHeaderLabels([str(c) for c in columnas])
@@ -127,8 +147,18 @@ class TablaDML(QTableWidget):
             for j, nombre in enumerate(nombres):
                 valor = fila.get(nombre)
                 self._poner(i, j, valor, nombre)
-        self.setSortingEnabled(True)
+        if ordenar:
+            self.setSortingEnabled(True)
         self.resizeColumnsToContents()
+
+    def reactivar_ordenacion(self) -> None:
+        """Reactiva la ordenacion una vez terminado el formateo por indice.
+
+        Se usa junto a ``cargar_filas(..., ordenar=False)``. Como todas las celdas
+        ya tienen su texto definitivo, al ordenar las filas se mueven **enteras** y
+        cada valor sigue junto a su etiqueta.
+        """
+        self.setSortingEnabled(True)
 
     def cargar_dataframe(self, df: Optional[pd.DataFrame]) -> None:
         """Rellena la tabla a partir de un ``DataFrame`` (indice incluido como columna)."""

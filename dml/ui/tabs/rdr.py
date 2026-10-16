@@ -507,7 +507,9 @@ class TabRDR(TabConGrafico):
             }
         ]
         tabla = TablaDML(COLUMNAS_COMPARACION, tooltips_columnas=TOOLTIPS_COMPARACION)
-        tabla.cargar_filas(filas, COLUMNAS_COMPARACION)
+        # ordenar=False: se reescribe la columna "Valor" por indice mas abajo, y
+        # ordenar antes de escribir cruzaria cada valor con otra fila.
+        tabla.cargar_filas(filas, COLUMNAS_COMPARACION, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_COMPARACION.index("Rendimiento (Rend_CAPM)"),
@@ -528,6 +530,7 @@ class TabRDR(TabConGrafico):
             COLUMNAS_COMPARACION.index("Diferencia"),
             [fmt_pct(diferencia, 2) if diferencia is not None else None],
         )
+        tabla.reactivar_ordenacion()   # ya con el texto definitivo en cada celda
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
 
@@ -547,7 +550,9 @@ class TabRDR(TabConGrafico):
             return
         registros = datos.to_dict(orient="records") if datos is not None else []
         tabla = TablaDML(COLUMNAS_RIESGO, tooltips_columnas=TOOLTIPS_RIESGO)
-        tabla.cargar_filas(registros, COLUMNAS_RIESGO)
+        # ordenar=False por lo mismo: el formateo de "Valor" depende de la metrica
+        # de su fila y se aplica despues, por indice.
+        tabla.cargar_filas(registros, COLUMNAS_RIESGO, ordenar=False)
         nombres = [str(fila.get("Metrica", "")) for fila in registros]
         _aplicar_formatos(
             tabla,
@@ -557,6 +562,7 @@ class TabRDR(TabConGrafico):
                 for nombre, fila in zip(nombres, registros)
             ],
         )
+        tabla.reactivar_ordenacion()   # ya con el texto definitivo en cada celda
         self._tooltips_riesgo(tabla, COLUMNAS_RIESGO.index("Metrica"), COLUMNAS_RIESGO.index("Valor"))
         self._ajustar_alto(tabla, filas_maximas=12)
         caja.addWidget(tabla)
@@ -601,7 +607,7 @@ class TabRDR(TabConGrafico):
             colores_condicionales=_color_estado(COLUMNAS_CRITERIO.index("Estado")),
             tooltips_columnas=TOOLTIPS_CRITERIO,
         )
-        tabla.cargar_filas(filas, COLUMNAS_CRITERIO)
+        tabla.cargar_filas(filas, COLUMNAS_CRITERIO, ordenar=False)
         unidad = criterio.unidad if criterio is not None else "porcentaje"
         _aplicar_formatos(
             tabla,
@@ -613,6 +619,7 @@ class TabRDR(TabConGrafico):
             COLUMNAS_CRITERIO.index("Valor de comparacion"),
             [_formato_unidad(filas[0]["Valor de comparacion"], unidad, r.moneda)],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
 
@@ -672,7 +679,7 @@ class TabRDR(TabConGrafico):
             ),
         ]
         tabla = TablaDML(COLUMNAS_ORIGEN, tooltips_columnas=TOOLTIPS_ORIGEN)
-        tabla.cargar_filas(filas, COLUMNAS_ORIGEN)
+        tabla.cargar_filas(filas, COLUMNAS_ORIGEN, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_ORIGEN.index("Valor"),
@@ -686,6 +693,7 @@ class TabRDR(TabConGrafico):
                 fmt_pct(filas[6]["Valor"], 2) if a_float(filas[6]["Valor"]) is not None else None,
             ],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
         _aviso(

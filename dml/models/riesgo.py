@@ -5,7 +5,7 @@ Convenios
 ---------
 * ``sigma_mensual`` es la desviacion tipica **muestral** (``ddof=1``) de los
   rendimientos mensuales.
-* ``sigma_anual = sigma_mensual * sqrt(12)`` [ESTÃNDAR]. La volatilidad que
+* ``sigma_anual = sigma_mensual * sqrt(12)`` [ESTANDAR]. La volatilidad que
   entra en Black-Scholes **debe** ser anual; en modo ``excel`` se usa la mensual
   sin anualizar y se deja constancia en :attr:`MetricasRiesgo.nota_sigma`.
 * Descomposicion del riesgo total: ``Var(Ra) = Beta^2 Var(Rm) + Var(residuo)``,
@@ -179,7 +179,7 @@ def tabla_riesgo(metricas: MetricasRiesgo) -> pd.DataFrame:
     return pd.DataFrame(
         [
             {"Metrica": "Sigma mensual", "Valor": m.sigma_mensual, "Formula": "STDEV.S(rendimientos mensuales)"},
-            {"Metrica": "Sigma anual", "Valor": m.sigma_anual, "Formula": "sigma_mensual * SQRT(12) [ESTÃNDAR]"},
+            {"Metrica": "Sigma anual", "Valor": m.sigma_anual, "Formula": "sigma_mensual * SQRT(12) [ESTANDAR]"},
             {"Metrica": "Riesgo total (varianza)", "Valor": m.riesgo_total, "Formula": "VAR.S(rendimientos)"},
             {
                 "Metrica": "Riesgo sistematico",

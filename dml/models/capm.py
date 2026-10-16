@@ -3,7 +3,7 @@
 
 Los dos modos de calculo del pliego se implementan aqui:
 
-* ``estandar`` [ESTÃNDAR]: estimadores **coherentes** en numerador y
+* ``estandar`` [ESTANDAR]: estimadores **coherentes** en numerador y
   denominador (covarianza y varianza muestrales, ``ddof=1``), prima de riesgo
   de **mercado** ``E[Rm - Rf]`` anualizada y precio objetivo de la TRG a escala
   mensual correcta.
@@ -128,7 +128,7 @@ def prima_riesgo_mercado(
 ) -> Optional[float]:
     """PRH de **mercado**: promedio de ``(Rm - Rf)``, anualizado si se pide.
 
-    [ESTÃNDAR] La anualizacion es una multiplicacion por 12 (tasa nominal), que
+    [ESTANDAR] La anualizacion es una multiplicacion por 12 (tasa nominal), que
     es coherente con la TLR cotizada que se suma en el CAPM: si la TLR es anual
     y la prima se deja mensual, el CAPM sumaria magnitudes de distinta escala.
     """
@@ -176,7 +176,7 @@ def precio_proyectado_trg(
 ) -> Optional[float]:
     """Precio proyectado con la TRG.
 
-    * ``estandar`` [ESTÃNDAR]: ``Spot x (1 + TRG)^meses``, con ``TRG`` mensual y
+    * ``estandar`` [ESTANDAR]: ``Spot x (1 + TRG)^meses``, con ``TRG`` mensual y
       ``meses`` el numero de periodos mensuales equivalentes al horizonte ``T``.
       Mantiene la escala del spot.
     * ``excel``: ``PROMEDIO(precios) x (1 + TRG)``. Replica el libro de

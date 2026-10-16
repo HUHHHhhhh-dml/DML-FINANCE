@@ -457,12 +457,14 @@ class TabCAPM(TabConGrafico):
             },
         ]
         tabla = TablaDML(COLUMNAS_BLOQUE, tooltips_columnas=TOOLTIPS_BLOQUE)
-        tabla.cargar_filas(filas, COLUMNAS_BLOQUE)
+        # ordenar=False: el formateo por fila se aplica despues, por indice.
+        tabla.cargar_filas(filas, COLUMNAS_BLOQUE, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_BLOQUE.index("Valor"),
             [fmt_num(fila["Valor"], 4) if a_float(fila["Valor"]) is not None else None for fila in filas],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
 
@@ -541,7 +543,7 @@ class TabCAPM(TabConGrafico):
             },
         ]
         tabla = TablaDML(COLUMNAS_BLOQUE, tooltips_columnas=TOOLTIPS_BLOQUE)
-        tabla.cargar_filas(filas, COLUMNAS_BLOQUE)
+        tabla.cargar_filas(filas, COLUMNAS_BLOQUE, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_BLOQUE.index("Valor"),
@@ -551,6 +553,7 @@ class TabCAPM(TabConGrafico):
                 fmt_pct(filas[2]["Valor"], 2) if a_float(filas[2]["Valor"]) is not None else None,
             ],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
         if r.modo == "excel":
@@ -621,7 +624,7 @@ class TabCAPM(TabConGrafico):
             },
         ]
         tabla = TablaDML(COLUMNAS_BLOQUE, tooltips_columnas=TOOLTIPS_BLOQUE)
-        tabla.cargar_filas(filas, COLUMNAS_BLOQUE)
+        tabla.cargar_filas(filas, COLUMNAS_BLOQUE, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_BLOQUE.index("Valor"),
@@ -635,6 +638,7 @@ class TabCAPM(TabConGrafico):
                 fmt_pct(filas[6]["Valor"], 2) if a_float(filas[6]["Valor"]) is not None else None,
             ],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
         _aviso(
@@ -701,7 +705,7 @@ class TabCAPM(TabConGrafico):
             ),
         ]
         tabla = TablaDML(COLUMNAS_ORIGEN, tooltips_columnas=TOOLTIPS_ORIGEN)
-        tabla.cargar_filas(filas, COLUMNAS_ORIGEN)
+        tabla.cargar_filas(filas, COLUMNAS_ORIGEN, ordenar=False)
         _aplicar_formatos(
             tabla,
             COLUMNAS_ORIGEN.index("Valor"),
@@ -717,6 +721,7 @@ class TabCAPM(TabConGrafico):
                 _moneda(filas[8]["Valor"], r.moneda, 2) if a_float(filas[8]["Valor"]) is not None else None,
             ],
         )
+        tabla.reactivar_ordenacion()
         self._ajustar_alto(tabla)
         caja.addWidget(tabla)
         _aviso(

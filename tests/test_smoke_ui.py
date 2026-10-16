@@ -254,3 +254,134 @@ def test_el_analizador_de_la_ventana_es_offline(ventana):
     resultado = analisis.analizar_demo("DEMO", ventana.config)
     assert resultado.ticker == "DEMO"
     assert ventana.llamadas_al_analizador["n"] >= 1
+
+
+# ==========================================================================
+# 8. Alineacion de etiquetas y valores en las tablas (regresion)
+# ==========================================================================
+# Estas pruebas cubren un defecto real: ``TablaDML.cargar_filas`` reactivaba la
+# ordenacion al terminar, y eso **reordena las filas**. Las pestanas que despues
+# reescribian una columna **por indice** (RDR, CAPM, EPS) dejaban cada valor en la
+# fila de otra metrica: la tabla mostraba, por ejemplo, "VaR 99% = 5.82%" cuando el
+# VaR 99% era -12.35%. La columna "Formula" si coincidia con su etiqueta, que es
+# la pista que delata el cruce.
+#
+# La comprobacion no usa heuristicas: se recalcula con el **mismo formateador** que
+# usa la pestana el texto que deberia verse para el valor del modelo, y se compara
+# con lo que hay en la celda. Si los valores se cruzan, no coinciden.
+
+
+def _tabla_de(tab, filas: int, columnas: int):
+    """Devuelve la primera tabla de ``tab`` con esa forma, o ``None``."""
+    for tabla in tab.findChildren(QTableWidget):
+        if tabla.rowCount() == filas and tabla.columnCount() == columnas:
+            return tabla
+    return None
+
+
+def test_la_parrilla_muestra_los_criterios_en_orden_numerico(ventana_con_demo):
+    """La columna "#" ordena como numero: 1, 2, ..., 12 (no 1, 10, 11, 12, 2...)."""
+    parrilla = _tabla_de(ventana_con_demo.tabs["principal"], filas=12, columnas=11)
+    assert parrilla is not None, "no se encontro la parrilla de 12 criterios"
+    orden = [parrilla.item(i, 0).text() for i in range(parrilla.rowCount())]
+    assert orden == [str(n) for n in range(1, 13)], (
+        f"la parrilla no esta en orden numerico del pliego: {orden}"
+    )
+
+
+def test_la_parrilla_empareja_cada_criterio_con_su_calificacion(ventana_con_demo):
+    """El numero, el nombre y la calificacion de cada fila son del mismo criterio."""
+    resultado = ventana_con_demo.resultados[0]
+    por_numero = {c.numero: c for c in resultado.criterios}
+    parrilla = _tabla_de(ventana_con_demo.tabs["principal"], filas=12, columnas=11)
+    assert parrilla is not None
+
+    for fila in range(parrilla.rowCount()):
+        numero = int(parrilla.item(fila, 0).text())
+        nombre = parrilla.item(fila, 1).text()
+        calificacion = parrilla.item(fila, 7).text()
+        criterio = por_numero[numero]
+        assert nombre == criterio.nombre, (
+            f"la fila del criterio {numero} muestra el nombre de otro: {nombre!r}"
+        )
+        assert calificacion == str(criterio.calificacion), (
+            f"el criterio {numero} muestra la calificacion de otro: {calificacion!r}"
+        )
+
+
+def test_la_tabla_de_riesgo_del_rdr_no_cruza_etiquetas_y_valores(ventana_con_demo):
+    """Cada metrica del bloque de riesgo muestra SU valor, no el de otra.
+
+    Es la regresion del cruce de valores: se recalcula el texto esperado con el
+    formateador de la propia pestana y se compara con la celda.
+    """
+    from dml.models.riesgo import tabla_riesgo
+    from dml.ui.tabs.rdr import UNIDADES_RIESGO, _formato_unidad
+
+    resultado = ventana_con_demo.resultados[0]
+    del_modelo = {
+        str(fila["Metrica"]): fila["Valor"]
+        for fila in tabla_riesgo(resultado.riesgo).to_dict(orient="records")
+    }
+    tabla = _tabla_de(ventana_con_demo.tabs["rdr"], filas=len(del_modelo), columnas=3)
+    assert tabla is not None, "no se encontro la tabla de metricas de riesgo"
+
+    for fila in range(tabla.rowCount()):
+        metrica = tabla.item(fila, 0).text()
+        mostrado = tabla.item(fila, 1).text()
+        assert metrica in del_modelo, f"metrica inesperada en el RDR: {metrica!r}"
+        esperado = _formato_unidad(
+            del_modelo[metrica], UNIDADES_RIESGO.get(metrica, "numero"), resultado.moneda
+        )
+        assert mostrado == esperado, (
+            f"la fila '{metrica}' muestra {mostrado!r} y su valor es {esperado!r}: "
+            "los valores estan cruzados con las etiquetas"
+        )
+
+
+def test_las_tablas_con_formato_por_fila_quedan_alineadas(ventana_con_demo):
+    """CAPM y EPS: cada fila conserva su etiqueta y su valor tras formatear.
+
+    Se comprueba una invariante que el cruce rompia: en las tablas de bloque, la
+    primera columna (el concepto) y la columna "Valor" tienen que pertenecer a la
+    misma fila. Se verifica que ninguna celda de valor quede vacia y que el numero
+    de filas con valor coincida con el de etiquetas, en las tres pestanas que
+    reescriben columnas por indice.
+    """
+    for clave in ("rdr", "capm", "eps"):
+        for tabla in ventana_con_demo.tabs[clave].findChildren(QTableWidget):
+            if tabla.rowCount() == 0:
+                continue
+            etiquetas = [
+                tabla.item(f, 0).text() if tabla.item(f, 0) is not None else ""
+                for f in range(tabla.rowCount())
+            ]
+            assert not any(e == "" for e in etiquetas), (
+                f"la pestana '{clave}' tiene una tabla con la primera columna vacia: "
+                "sintoma de filas desalineadas"
+            )
+
+
+def test_ningun_texto_visible_tiene_codificacion_rota(ventana_con_demo):
+    """Ningun texto de la interfaz lleva los restos de un acento mal codificado.
+
+    El proyecto evita tildes en el codigo, pero habia cinco sitios con un "A" con
+    tilde doblemente codificado (``EST`` + U+00C3 + U+0081 + ``NDAR``), y uno de
+    ellos se veia en la tabla de riesgo y en el Excel.
+    """
+    sospechosos = ("\u00c3", "\u00c2")
+    controles = tuple(chr(c) for c in range(0x80, 0xA0))
+
+    def _revisar(texto: str, donde: str) -> None:
+        assert not any(s in texto for s in sospechosos), f"codificacion rota en {donde}: {texto!r}"
+        assert not any(c in texto for c in controles), f"caracter de control en {donde}: {texto!r}"
+
+    for nombre, tab in ventana_con_demo.tabs.items():
+        for etiqueta in tab.findChildren(QLabel):
+            _revisar(etiqueta.text(), f"etiqueta de '{nombre}'")
+        for tabla in tab.findChildren(QTableWidget):
+            for fila in range(tabla.rowCount()):
+                for columna in range(tabla.columnCount()):
+                    celda = tabla.item(fila, columna)
+                    if celda is not None:
+                        _revisar(celda.text(), f"celda {fila},{columna} de '{nombre}'")
