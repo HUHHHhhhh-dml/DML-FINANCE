@@ -199,11 +199,22 @@ if [ "$AUTOTEST" = "1" ]; then
           --autotest-salida "$INFORME" >"$SALIDA" 2>&1 )
     CODIGO=$?
 
+    # El INFORME manda sobre el codigo de salida. La aplicacion escribe el
+    # informe siempre, y en macOS es habitual que Qt termine con un codigo
+    # distinto de cero al cerrar; si el informe dice OK, la autoprueba paso y el
+    # codigo solo se menciona como aviso. Comprobar antes el codigo daba un
+    # mensaje enganoso ("el ejecutable no termino con exito") con el informe bien.
     if grep -q "RESULTADO: OK" "$INFORME" 2>/dev/null; then
-        informe "Autotest con HOME limpio" "$OK"
+        if [ "$CODIGO" -eq 0 ]; then
+            informe "Autotest con HOME limpio" "$OK"
+        else
+            informe "Autotest con HOME limpio" "$OK (informe OK; salida=$CODIGO)"
+            echo "    Aviso: el proceso termino con $CODIGO (habitual al cerrar Qt en"
+            echo "    macOS). El informe dice RESULTADO: OK, asi que la autoprueba paso."
+        fi
         grep -E "PySide6|numpy|pandas|ventana|excel" "$INFORME" | sed 's/^/    /'
     elif [ -f "$INFORME" ]; then
-        # El ejecutable arranco y dejo informe: la autoprueba encontro fallos.
+        # Hay informe pero la autoprueba encontro fallos: ahi esta la causa.
         fallo "Autotest con HOME limpio (codigo $CODIGO)"
         echo "    La aplicacion arranco y dejo informe, pero la autoprueba fallo."
         echo "    --- informe completo ---"
