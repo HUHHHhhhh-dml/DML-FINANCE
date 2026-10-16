@@ -178,24 +178,51 @@ fi
 # ---------------------------------------------------------------------------
 # 5) Autotest con HOME limpio (como un usuario nuevo)
 # ---------------------------------------------------------------------------
+# Se distinguen TRES cosas, que antes se confundian en un unico mensaje:
+#   a) el ejecutable no arranca (codigo 126/127 o senal),
+#   b) arranca y la autoprueba informa de fallos (codigo 1 + informe),
+#   c) todo bien.
+# En los dos primeros casos se vuelca el INFORME, que es donde esta la causa:
+# la autoprueba escribe que dependencia falta, y sin el informe solo se sabe que
+# "algo fallo".
 if [ "$AUTOTEST" = "1" ]; then
     HOME_PRUEBA="$(mktemp -d)"
-    if ( cd "$APP/Contents/Frameworks" 2>/dev/null || cd "$APP/Contents/MacOS"; \
-         HOME="$HOME_PRUEBA" QT_QPA_PLATFORM=offscreen "$EJECUTABLE" --autotest \
-             --autotest-salida "$HOME_PRUEBA/autotest.txt" >/dev/null 2>&1 ); then
-        if grep -q "RESULTADO: OK" "$HOME_PRUEBA/autotest.txt" 2>/dev/null; then
-            informe "Autotest con HOME limpio" "$OK"
-            grep -E "PySide6|numpy|pandas|ventana|excel" "$HOME_PRUEBA/autotest.txt" | sed 's/^/    /'
-        else
-            fallo "Autotest con HOME limpio (informe sin RESULTADO: OK)"
-            tail -15 "$HOME_PRUEBA/autotest.txt" 2>/dev/null | sed 's/^/    /'
-        fi
+    INFORME="$HOME_PRUEBA/autotest.txt"
+    SALIDA="$HOME_PRUEBA/salida.txt"
+    # Se entra en la carpeta del bundle (donde vive config.yaml) para reproducir
+    # el arranque real. Si no se puede, se aborta en vez de ejecutar desde un
+    # directorio que no es el de la aplicacion, que daria un resultado enganoso.
+    ( cd "$APP/Contents/Frameworks" 2>/dev/null \
+        || cd "$APP/Contents/MacOS" 2>/dev/null \
+        || { echo "No se pudo entrar en el bundle"; exit 125; }
+      HOME="$HOME_PRUEBA" QT_QPA_PLATFORM=offscreen "$EJECUTABLE" --autotest \
+          --autotest-salida "$INFORME" >"$SALIDA" 2>&1 )
+    CODIGO=$?
+
+    if grep -q "RESULTADO: OK" "$INFORME" 2>/dev/null; then
+        informe "Autotest con HOME limpio" "$OK"
+        grep -E "PySide6|numpy|pandas|ventana|excel" "$INFORME" | sed 's/^/    /'
+    elif [ -f "$INFORME" ]; then
+        # El ejecutable arranco y dejo informe: la autoprueba encontro fallos.
+        fallo "Autotest con HOME limpio (codigo $CODIGO)"
+        echo "    La aplicacion arranco y dejo informe, pero la autoprueba fallo."
+        echo "    --- informe completo ---"
+        sed 's/^/    /' "$INFORME"
     else
-        fallo "Autotest con HOME limpio"
-        echo "    El ejecutable no termino con exito. Prueba a mano:"
-        echo "      QT_QPA_PLATFORM=offscreen \"$EJECUTABLE\" --autotest"
-        echo "    Trazas: ~/.dml_finance/dml-finance.log"
+        # No hay informe: el ejecutable no llego a ejecutar la autoprueba.
+        fallo "Autotest con HOME limpio (codigo $CODIGO, sin informe)"
+        echo "    El ejecutable no llego a generar el informe. Salida:"
+        tail -25 "$SALIDA" 2>/dev/null | sed 's/^/    /'
+        echo "    Trazas: $HOME_PRUEBA/.dml_finance/dml-finance.log"
     fi
+
+    # Las trazas de la aplicacion, si las hubo: suelen decir la causa exacta.
+    for registro in "$HOME_PRUEBA/.dml_finance/dml-finance.log" \
+                    "$HOME_PRUEBA/Library/Application Support/DML-FINANCE/dml-finance.log"; do
+        [ -f "$registro" ] || continue
+        echo "    --- ultimas lineas de $registro ---"
+        tail -20 "$registro" | sed 's/^/    /'
+    done
     rm -rf "$HOME_PRUEBA"
 fi
 

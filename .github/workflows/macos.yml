@@ -140,6 +140,36 @@ jobs:
           python3 -c "import sys; print(sys.executable, sys.version)" || true
           python3 -c "import PIL; print('Pillow', PIL.__version__)" 2>&1 | head -2 || true
 
+      - name: Comparar la autoprueba con HOME normal y con HOME nuevo
+        # La autoprueba del flujo (HOME del runner) pasa; la de verificar_mac.sh
+        # (HOME temporal nuevo) falla. Aqui se ejecutan las dos formas y se vuelca
+        # la salida integra para ver por que. El codigo de salida se captura con
+        # '|| true' para que el paso no se aborte y se vea todo.
+        if: steps.verificar.outcome == 'failure'
+        run: |
+          EJECUTABLE="dist/DML-FINANCE.app/Contents/MacOS/DML-FINANCE"
+
+          echo "=== 1) HOME del runner (la forma que SI paso) ==="
+          echo "HOME=$HOME"
+          QT_QPA_PLATFORM=offscreen "$EJECUTABLE" --autotest \
+            --autotest-salida "$RUNNER_TEMP/at_normal.txt" || echo "codigo de salida: $?"
+          echo "--- informe ---"
+          cat "$RUNNER_TEMP/at_normal.txt" 2>/dev/null || echo "(sin informe)"
+
+          echo
+          echo "=== 2) HOME temporal nuevo (la forma que FALLA) ==="
+          H2="$(mktemp -d)"
+          echo "HOME=$H2"
+          QT_QPA_PLATFORM=offscreen env HOME="$H2" "$EJECUTABLE" --autotest \
+            --autotest-salida "$H2/at_nuevo.txt" || echo "codigo de salida: $?"
+          echo "--- informe ---"
+          cat "$H2/at_nuevo.txt" 2>/dev/null || echo "(sin informe en $H2)"
+          echo "--- trazas de la aplicacion ---"
+          find "$H2" -name "*.log" -exec echo "== {}" \; -exec tail -40 {} \; 2>/dev/null || true
+          echo "--- contenido del HOME temporal ---"
+          ls -la "$H2" || true
+          rm -rf "$H2"
+
       - name: Fallar si la verificacion no paso
         # Se evalua despues del diagnostico, para no perder su salida.
         if: always() && steps.verificar.outcome == 'failure'
