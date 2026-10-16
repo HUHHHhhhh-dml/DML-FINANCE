@@ -95,22 +95,74 @@ jobs:
           echo "Autoprueba: OK"
 
       - name: Verificar el bundle (scripts del proyecto)
-        run: DML_SIN_GUI=1 bash tests/verificar_mac.sh dist/DML-FINANCE.app
+        id: verificar
+        # continue-on-error para que, si falla, se ejecute igualmente el paso de
+        # diagnostico. El fallo se reporta al final, en "Fallar si la verificacion
+        # no paso".
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          DML_SIN_GUI=1 bash --debug tests/verificar_mac.sh dist/DML-FINANCE.app 2>&1 \
+            | tee "$RUNNER_TEMP/verificacion.log"
+          ESTADO=${PIPESTATUS[0]}
+          echo "::group::Resumen de comprobaciones"
+          grep -E "\[OK\]|\[FALLO\]" "$RUNNER_TEMP/verificacion.log" || true
+          echo "::endgroup::"
+          exit "$ESTADO"
+
+      - name: Diagnostico del bundle (solo si algo falla)
+        # No se ejecuta si todo va bien. Existe para que un fallo deje toda la
+        # informacion necesaria en el registro, sin repetir la ejecucion.
+        if: steps.verificar.outcome == 'failure'
+        run: |
+          echo "=== Estructura del bundle ==="
+          find dist/DML-FINANCE.app -maxdepth 3 -not -path "*/_internal/*" | head -40
+          echo
+          echo "=== Punto de entrada ==="
+          ls -la dist/DML-FINANCE.app/Contents/MacOS/ || true
+          echo
+          echo "=== Arquitecturas ==="
+          lipo -archs dist/DML-FINANCE.app/Contents/MacOS/DML-FINANCE || true
+          echo
+          echo "=== Firma ==="
+          codesign -dv dist/DML-FINANCE.app 2>&1 | head -10 || true
+          echo
+          echo "=== Info.plist ==="
+          plutil -p dist/DML-FINANCE.app/Contents/Info.plist || true
+          echo
+          echo "=== Autoprueba directa, con salida completa ==="
+          QT_QPA_PLATFORM=offscreen dist/DML-FINANCE.app/Contents/MacOS/DML-FINANCE --autotest \
+            --autotest-salida "$RUNNER_TEMP/at2.txt" 2>&1 | tail -30 || true
+          echo "--- contenido del informe ---"
+          cat "$RUNNER_TEMP/at2.txt" 2>/dev/null || echo "(no se genero informe)"
+          echo
+          echo "=== python3 del runner y modulos que usa el script ==="
+          python3 -c "import sys; print(sys.executable, sys.version)" || true
+          python3 -c "import PIL; print('Pillow', PIL.__version__)" 2>&1 | head -2 || true
+
+      - name: Fallar si la verificacion no paso
+        # Se evalua despues del diagnostico, para no perder su salida.
+        if: always() && steps.verificar.outcome == 'failure'
+        run: |
+          echo "::error::La verificacion del bundle fallo. Revisa el paso de diagnostico."
+          exit 1
 
       - name: Crear el .dmg y el .zip
         run: python empaquetar_mac.py --dmg --zip
 
       - name: Resumen
         run: |
-          echo "### Archivos generados" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          ls -lh dist/*.dmg dist/*.zip >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Comprobacion | Resultado |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
-          lipo -archs dist/DML-FINANCE.app/Contents/MacOS/DML-FINANCE \
-            | sed 's/^/| Arquitecturas | /' >> "$GITHUB_STEP_SUMMARY"
-          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Archivos generados"
+            echo ""
+            ls -lh dist/*.dmg dist/*.zip 2>/dev/null || true
+            echo ""
+            echo "| Comprobacion | Resultado |"
+            echo "|---|---|"
+            printf '| Arquitecturas | %s |\n' "$(lipo -archs dist/DML-FINANCE.app/Contents/MacOS/DML-FINANCE)"
+            printf '| Version de macOS minima | %s |\n' \
+              "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' dist/DML-FINANCE.app/Contents/Info.plist)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Guardar el .dmg y el .zip como artefactos
         uses: actions/upload-artifact@v4
