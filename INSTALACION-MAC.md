@@ -159,13 +159,49 @@ de copiar la app.
 |---|---|
 | `NSPrincipalClass = NSApplication` | **Sin esto la ventana se dibuja pixelada en pantallas Retina.** Es el fallo clásico de empaquetar Qt en Mac. |
 | `NSHighResolutionCapable = true` | Activa el renderizado a resolución nativa. |
-| `LSMinimumSystemVersion = 12.0` | PySide6 6.12 no arranca en macOS antiguos; declararlo da un mensaje claro en vez de un fallo opaco. |
+| `LSMinimumSystemVersion = 14.0` | **Lo impone PySide6 6.12**, cuya rueda es `macosx_14_0`: en macOS 12 o 13 Qt ni siquiera se instala. Declararlo evita un fallo opaco al cargar Qt. |
 | `LSApplicationCategoryType` | Coloca la app en la categoría correcta de Launchpad y Finder. |
 | `CFBundleIdentifier` | Identidad de la app (`com.dmlfinance.analizador`). |
+
+### Requisito de versión de macOS (importante)
+
+**La aplicación necesita macOS 14 (Sonoma) o superior**, y no es una decisión
+libre: la impone PySide6. Cada versión de Qt sube su versión mínima, y se puede
+comprobar en las etiquetas de sus ruedas en PyPI:
+
+| PySide6 | Etiqueta de la rueda | macOS mínimo |
+|---|---|---|
+| 6.6 / 6.7 | `macosx_11_0_universal2` | 11 |
+| 6.8 / 6.9 | `macosx_12_0_universal2` | 12 |
+| 6.10 | `macosx_13_0_universal2` | 13 |
+| **6.12** (la que usa el proyecto) | `macosx_14_0_universal2` | **14** |
+
+Si necesitas dar soporte a macOS 12 o 13, **hay que bajar la versión de PySide6**
+(no basta con cambiar `LSMinimumSystemVersion`, que solo describe el bundle).
+Con `PySide6==6.10.*` el mínimo pasa a macOS 13 y con `6.8.*` a macOS 12; el
+código de la interfaz no debería necesitar cambios, pero **eso hay que probarlo**.
 
 ---
 
 ## 4. Construir el `.app` (en la Mac)
+
+### 4.0 La vía sin Mac propio: compilarlo en GitHub Actions
+
+Si no quieres preparar el entorno en un Mac, el repositorio incluye un flujo que
+lo hace en la nube. Los runners de macOS son **gratis para repositorios
+públicos**, y este lo es.
+
+1. Entra en la pestaña **Actions** del repositorio.
+2. Elige **"macOS (.app + .dmg + .zip)"** en la lista de la izquierda.
+3. Pulsa **Run workflow**.
+4. Opcional: escribe la etiqueta (`v1.0.0`) y marca **publicar_en_release** para
+   que adjunte el `.dmg` y el `.zip` a esa release automáticamente.
+5. En unos minutos tendrás el `.dmg` y el `.zip` como artefactos descargables de
+   la ejecución.
+
+Con la opción 4 **no hace falta descargar ni subir nada a mano**: los archivos
+aparecen en la release. El flujo también ejecuta la autoprueba y
+`tests/verificar_mac.sh`, así que si algo falla lo verás en el registro.
 
 ### 4.1 Preparar la Mac (una sola vez)
 

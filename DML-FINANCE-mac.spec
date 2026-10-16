@@ -73,9 +73,20 @@ RECURSOS = RAIZ / "recursos"
 IDENTIFICADOR = "com.dmlfinance.analizador"
 VERSION = "1.0.0"
 
-#: Version minima de macOS. PySide6 6.12 usa Qt 6.12, que ya no soporta versiones
-#: anteriores a macOS 12; declararlo evita un fallo opaco al abrir la app.
-MACOS_MINIMO = "12.0"
+#: Version minima de macOS. NO es una eleccion libre: la fija la rueda de
+#: PySide6 que se instala. Comprobado en PyPI, la etiqueta de plataforma sube con
+#: cada version de Qt:
+#:
+#:     PySide6 6.6 / 6.7  ->  macosx_11_0   (macOS 11)
+#:     PySide6 6.8 / 6.9  ->  macosx_12_0   (macOS 12)
+#:     PySide6 6.10       ->  macosx_13_0   (macOS 13)
+#:     PySide6 6.12       ->  macosx_14_0   (macOS 14)  <- la que usa el proyecto
+#:
+#: Declarar 12.0 aqui (como estaba) seria mentir al sistema: la app no arrancaria
+#: en macOS 12 y 13, y el fallo apareceria al cargar Qt, no al abrir el bundle.
+#: Si algun dia hace falta dar soporte a macOS mas antiguos, hay que bajar la
+#: version de PySide6, no este numero.
+MACOS_MINIMO = "14.0"
 
 hiddenimports = [
     'yfinance',

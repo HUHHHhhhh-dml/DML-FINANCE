@@ -583,7 +583,8 @@ Se leen de variables de entorno:
 
 Requisitos
 ----------
-macOS 12 o superior. En Mac con Intel tambien funciona, pero mas lento
+macOS 14 (Sonoma) o superior. La version la impone Qt 6.12, no el programa:
+para macOS 12 o 13 habria que recompilar con una version anterior de PySide6.
 (no lleva la arquitectura x86_64).
 
 Herramienta de analisis: no constituye asesoria financiera.
