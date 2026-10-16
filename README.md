@@ -25,6 +25,15 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+¿En **Fedora**? El codigo de ejecucion ya es multiplataforma; para generar el
+paquete distribuible (binario, `.tar.gz`, `.desktop` y RPM) usa la guia
+**[INSTALACION-FEDORA.md](INSTALACION-FEDORA.md)**, que incluye la comparativa de
+herramientas y el checklist de verificacion.
+
+¿En **macOS**? Hay un empaquetador propio que genera `DML-FINANCE.app`, `.dmg` y
+`.zip`, con su receta `DML-FINANCE-mac.spec`: consulta
+**[INSTALACION-MAC.md](INSTALACION-MAC.md)**. Windows y Linux no cambian.
+
 Opcional (respaldo de Investing.com con navegador headless — paso 2 del pliego):
 
 ```bash
@@ -324,7 +333,27 @@ la interfaz en modo *offscreen* y comprueba que **todas** las pestañas se llena
 La suite es **offline por construccion**: una barrera en `conftest.py` bloquea
 cualquier conexion de red.
 
+Ademas de las pruebas unitarias, hay una verificacion del **paquete distribuible**
+(solo Linux): comprueba en un contenedor Fedora limpio que el `.tar.gz` arranca
+sin Python del sistema, que no le faltan bibliotecas compartidas y que el
+`.desktop` es valido. Ver [INSTALACION-FEDORA.md](INSTALACION-FEDORA.md).
+
+```bash
+python empaquetar.py --tar
+tests/verificar_contenedor.sh
+```
+
 ## 11. Ejecutable, acceso directo (.exe) y ZIP para compartir
+
+> **¿Fedora / Linux?** Esta seccion describe el flujo en **Windows**. Para Linux
+> (empaquetado, `.tar.gz`, `.desktop` y RPM) consulta la guia dedicada:
+> **[INSTALACION-FEDORA.md](INSTALACION-FEDORA.md)**. `empaquetar.py` es
+> multiplataforma: en Linux genera el binario ELF, el lanzador `DML-FINANCE.sh` y
+> la entrada `.desktop` en lugar del `.exe` y el acceso directo `.lnk`.
+>
+> **¿macOS?** Esta seccion **no** aplica: en macOS el resultado es un bundle
+> `.app`. Usa `python empaquetar_mac.py` y consulta
+> **[INSTALACION-MAC.md](INSTALACION-MAC.md)**.
 
 Para usar el programa **sin Python y sin consola**, con un acceso directo en el
 escritorio:
@@ -356,17 +385,25 @@ existe o es mas antiguo que el logo, de modo que cambiar el logo y volver a
 empaquetar es suficiente. Tambien se puede forzar con
 `python generar_icono.py`.
 
+En **Linux** el icono embebido no existe (un binario ELF no lleva recursos de
+icono): se usa `recursos/icono.png` y se resuelve por escritorio con el
+`.desktop` y el arbol `hicolor`. La aplicacion ya prueba `.ico` → `.png` → logo,
+asi que el mismo codigo sirve en ambos sistemas.
+
 Opciones utiles:
 
 | Comando | Que hace |
 |---------|----------|
-| `python empaquetar.py` | Ejecutable + acceso directo (por defecto, `--onedir`, arranca en 1-3 s) |
-| `python empaquetar.py --zip` | Ademas deja **`dist/DML-FINANCE.zip`** listo para compartir (ver la seccion siguiente) |
-| `python empaquetar.py --zip "D:\\otra.zip"` | El ZIP en otra ruta |
+| `python empaquetar.py` | Ejecutable + lanzador (por defecto, `--onedir`, arranca en 1-3 s) |
+| `python empaquetar.py --tar` | Ademas deja **`dist/DML-FINANCE-x86_64.tar.gz`** (Linux, conserva permisos) |
+| `python empaquetar.py --zip` | Ademas deja **`dist/DML-FINANCE.zip`** listo para compartir |
+| `python empaquetar.py --rpm` | Ademas genera el **`.rpm`** instalable (Linux) |
+| `python empaquetar.py --instalar` | Instala el `.desktop` en el menu de aplicaciones (Linux, sin root) |
 | `python empaquetar.py --completo` | No aligera el paquete (conserva todo lo que deja PyInstaller) |
-| `python empaquetar.py --unico` | Un unico `.exe` de ~90 MB (arranque lento: se descomprime en cada ejecucion) |
+| `python empaquetar.py --sin-poda` | No borra los componentes de Qt que la aplicacion no usa |
+| `python empaquetar.py --unico` | Un unico archivo (arranque lento: se descomprime en cada ejecucion) |
 | `python empaquetar.py --sin-acceso` | Solo el ejecutable, sin tocar el escritorio |
-| `python empaquetar.py --escritorio "D:\\ruta"` | Crea el acceso directo en otra carpeta |
+| `python empaquetar.py --escritorio "D:\\ruta"` | Crea el lanzador en otra carpeta |
 | `python empaquetar.py --limpiar` | Borra `build/` y `dist/` antes de empaquetar |
 | `python empaquetar.py --consola` | Compila con consola (util para depurar el empaquetado) |
 | `python generar_icono.py` | Regenera `recursos/icono.ico` y `recursos/icono.png` desde el logo |

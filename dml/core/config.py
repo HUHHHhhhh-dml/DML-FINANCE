@@ -231,9 +231,12 @@ def candidatos_datos_app() -> List[Path]:
 
     1. ``DML_FINANCE_HOME`` (lo elige el usuario; si no se puede usar, se avisa).
     2. ``%USERPROFILE%\\.dml_finance``, el sitio habitual.
-    3. ``%LOCALAPPDATA%\\DML-FINANCE``, por si el perfil del usuario esta
+    3. ``~/Library/Application Support/DML-FINANCE`` (solo en macOS: es el sitio
+       que espera el sistema y el unico escribible cuando el ``.app`` se instala
+       en ``/Applications``, que es de solo lectura para el usuario).
+    4. ``%LOCALAPPDATA%\\DML-FINANCE``, por si el perfil del usuario esta
        restringido pero su carpeta local si es escribible.
-    4. El directorio temporal del sistema, como ultimo recurso (la cache y las
+    5. El directorio temporal del sistema, como ultimo recurso (la cache y las
        preferencias se pierden al reiniciar, pero la aplicacion **funciona**).
     """
     candidatos: List[Path] = []
@@ -250,6 +253,13 @@ def candidatos_datos_app() -> List[Path]:
 
     anadir(Path(os.environ["DML_FINANCE_HOME"]) if os.environ.get("DML_FINANCE_HOME") else None)
     anadir(_carpeta_usuario() / ".dml_finance")
+    # macOS: si el .app esta en /Applications no se puede escribir a su lado, y
+    # "Application Support" es la carpeta que el sistema reserva para esto. Solo se
+    # añade en Darwin: en Fedora y Windows la lista de candidatos no cambia.
+    import sys
+
+    if sys.platform == "darwin":
+        anadir(_carpeta_usuario() / "Library" / "Application Support" / "DML-FINANCE")
     local = os.environ.get("LOCALAPPDATA") or os.environ.get("XDG_CACHE_HOME")
     if local:
         anadir(Path(local) / "DML-FINANCE")

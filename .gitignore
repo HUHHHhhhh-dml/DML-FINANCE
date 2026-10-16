@@ -6,6 +6,12 @@ venv/
 build/
 dist/
 *.spec
+# Las recetas de PyInstaller SI se versionan: empaquetar.py y empaquetar_mac.py
+# las leen siempre y el empaquetado falla si no estan (le paso al migrar de
+# Windows). El resto de .spec generados (build/receta-*.spec) siguen ignorados
+# porque build/ ya lo esta.
+!DML-FINANCE.spec
+!DML-FINANCE-mac.spec
 .tmp/
 .tmp_pytest/
 .pytest_cache/
