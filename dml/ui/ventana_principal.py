@@ -134,7 +134,7 @@ class VentanaPrincipal(QMainWindow):
         self.combo_modo.addItem("estandar", "estandar")
         self.combo_modo.addItem("excel", "excel")
         self.combo_modo.setToolTip(
-            "estandar: formulas corregidas [ESTÁNDAR]. excel: replica la metodologia del libro de referencia, incluidas sus inconsistencias"
+            "estandar: formulas corregidas [ESTANDAR]. excel: replica la metodologia del libro de referencia, incluidas sus inconsistencias"
         )
         # El modo inicial sale de config.yaml (o de --modo en la linea de comandos).
         general = self.config.get("general") or {}

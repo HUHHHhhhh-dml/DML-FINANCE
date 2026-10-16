@@ -93,7 +93,7 @@ def tlr_mensual(
 
     Args:
         tlr_anual: tasa anual en fraccion (p. ej. ``0.0435``).
-        modo: ``estandar`` -> ``TLR/12`` [ESTÁNDAR]; ``excel`` -> ``TLR/365*28``.
+        modo: ``estandar`` -> ``TLR/12`` [ESTANDAR]; ``excel`` -> ``TLR/365*28``.
 
     Returns:
         Tasa mensual en fraccion o ``None`` si la entrada no es valida.

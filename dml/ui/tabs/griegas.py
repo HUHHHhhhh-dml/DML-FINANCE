@@ -670,7 +670,7 @@ class TabGriegas(TabBase):
     def _pintar_aviso_modo(self, params: Dict[str, Any]) -> None:
         """Nota visible de convenciones, con el aviso de ``modo == "excel"`` si aplica."""
         texto = (
-            "[ESTÁNDAR] Este build usa el factor e^((b-r)T) multiplicando al spot en Delta, Gamma y "
+            "[ESTANDAR] Este build usa el factor e^((b-r)T) multiplicando al spot en Delta, Gamma y "
             "las primas, y descuenta el strike con r (e^(-rT)) en el call y en la put. "
         )
         if str(params.get("modo", "")).lower() == "excel":
@@ -780,7 +780,7 @@ class TabGriegas(TabBase):
             {
                 "Parametro": "Factor e^((b-r)T)",
                 "Valor": _texto(factor, 6),
-                "Descripcion": "Factor multiplicativo del spot en el modelo [ESTÁNDAR].",
+                "Descripcion": "Factor multiplicativo del spot en el modelo [ESTANDAR].",
             },
             {
                 "Parametro": "Modo del analisis",
