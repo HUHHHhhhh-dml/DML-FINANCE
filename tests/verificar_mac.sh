@@ -78,6 +78,14 @@ fi
 # ---------------------------------------------------------------------------
 # 1) Estructura del bundle
 # ---------------------------------------------------------------------------
+# IMPORTANTE: $APP se pasa a ruta ABSOLUTA. Mas abajo el script entra en la
+# carpeta del bundle con "cd" (para reproducir el arranque real, junto al
+# config.yaml), y con una ruta relativa el ejecutable dejaria de encontrarse:
+# daba "No such file or directory" y codigo 127.
+case "$APP" in
+    /*) ;;
+    *) APP="$(cd "$(dirname "$APP")" && pwd)/$(basename "$APP")" ;;
+esac
 EJECUTABLE="$APP/Contents/MacOS/DML-FINANCE"
 PLIST="$APP/Contents/Info.plist"
 

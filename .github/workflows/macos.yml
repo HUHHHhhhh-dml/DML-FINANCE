@@ -170,12 +170,25 @@ jobs:
           ls -la "$H2" || true
           rm -rf "$H2"
 
-      - name: Fallar si la verificacion no paso
-        # Se evalua despues del diagnostico, para no perder su salida.
-        if: always() && steps.verificar.outcome == 'failure'
+      - name: Resumen de la verificacion
+        # Este paso NO falla: solo informa. La puerta que marca el trabajo como
+        # fallido esta al FINAL ("Resultado de la verificacion"), para que el .dmg,
+        # el .zip y los registros se generen y se suban igualmente y se puedan
+        # descargar. Si fallara aqui, GitHub cortaria el flujo y se perderia todo.
+        if: always()
         run: |
-          echo "::error::La verificacion del bundle fallo. Revisa el paso de diagnostico."
-          exit 1
+          {
+            echo "### Verificacion del bundle"
+            if [ "${{ steps.verificar.outcome }}" = "success" ]; then
+              echo "Resultado: **OK**"
+            else
+              echo "Resultado: **FALLO** (revisa los pasos de diagnostico)"
+              echo ""
+              echo '```'
+              grep -E "\[OK\]|\[FALLO\]" "$RUNNER_TEMP/verificacion.log" 2>/dev/null || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Crear el .dmg y el .zip
         run: python empaquetar_mac.py --dmg --zip
@@ -205,7 +218,10 @@ jobs:
           retention-days: 30
 
       - name: Adjuntar a la release
-        if: ${{ inputs.publicar_en_release && inputs.etiqueta != '' }}
+        # Solo si la verificacion PASO. Es la barrera que impide publicar un
+        # paquete que no supero las comprobaciones: los artefactos de la ejecucion
+        # quedan igualmente para inspeccionarlos, pero no se hacen publicos.
+        if: ${{ always() && inputs.publicar_en_release && inputs.etiqueta != '' && steps.verificar.outcome == 'success' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.etiqueta }}
@@ -215,3 +231,15 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resultado de la verificacion
+        # Ultimo paso, a proposito: marca el trabajo como fallido si la
+        # verificacion no paso, pero DESPUES de haber generado y subido los
+        # artefactos, para que el diagnostico siempre este disponible.
+        if: always()
+        run: |
+          if [ "${{ steps.verificar.outcome }}" != "success" ]; then
+            echo "::error::La verificacion del bundle fallo. Revisa los pasos de diagnostico."
+            exit 1
+          fi
+          echo "Verificacion superada: el .app, el .dmg y el .zip son validos."
